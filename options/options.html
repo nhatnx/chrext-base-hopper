@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Extension Settings</h1>
+      <p>Configure your Chrome Extension preferences</p>
+    </header>
+
+    <main>
+      <section class="settings-section">
+        <h2>General Settings</h2>
+        
+        <div class="setting-item">
+          <label class="toggle-label">
+            <input type="checkbox" id="enabledToggle" checked>
+            <span class="toggle-slider"></span>
+            <span class="label-text">Enable Extension</span>
+          </label>
+          <p class="description">Turn the extension on or off</p>
+        </div>
+
+        <div class="setting-item">
+          <label for="themeSelect">Theme</label>
+          <select id="themeSelect">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto</option>
+          </select>
+          <p class="description">Choose your preferred theme</p>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Notification Settings</h2>
+        
+        <div class="setting-item">
+          <label class="toggle-label">
+            <input type="checkbox" id="notificationsToggle" checked>
+            <span class="toggle-slider"></span>
+            <span class="label-text">Enable Notifications</span>
+          </label>
+          <p class="description">Show notifications for important events</p>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h2>Advanced Settings</h2>
+        
+        <div class="setting-item">
+          <label for="customUrl">Custom URL Pattern</label>
+          <input type="text" id="customUrl" placeholder="https://example.com/*">
+          <p class="description">Set custom URL patterns for the extension to work on</p>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="saveBtn" class="btn btn-primary">Save Settings</button>
+        <button id="resetBtn" class="btn btn-secondary">Reset to Defaults</button>
+      </div>
+
+      <div id="statusMessage" class="status-message"></div>
+    </main>
+
+    <footer>
+      <p>Chrome Extension Template v1.0.0</p>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

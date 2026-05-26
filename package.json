@@ -1,0 +1,16 @@
+{
+  "name": "chrext-template",
+  "version": "1.0.0",
+  "description": "Chrome Extension Template",
+  "scripts": {
+    "dev": "echo 'Development mode - Load the extension folder directly in Chrome'",
+    "build": "echo 'No build step required - Ready to load in Chrome'"
+  },
+  "keywords": [
+    "chrome",
+    "extension",
+    "template"
+  ],
+  "author": "",
+  "license": "MIT"
+}

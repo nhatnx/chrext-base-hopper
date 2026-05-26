@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome Extension Template</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Chrome Extension</h1>
+      <p class="subtitle">Template v1.0.0</p>
+    </header>
+    
+    <main>
+      <div class="card">
+        <h2>Welcome!</h2>
+        <p>This is a Chrome Extension template with:</p>
+        <ul>
+          <li>Popup interface</li>
+          <li>Background service worker</li>
+          <li>Content scripts</li>
+          <li>Options page</li>
+        </ul>
+      </div>
+
+      <div class="actions">
+        <button id="changeColorBtn" class="btn btn-primary">
+          Change Page Color
+        </button>
+        <button id="getInfoBtn" class="btn btn-secondary">
+          Get Page Info
+        </button>
+      </div>
+
+      <div id="infoDisplay" class="info-display"></div>
+    </main>
+
+    <footer>
+      <a href="#" id="optionsLink">Options</a>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
