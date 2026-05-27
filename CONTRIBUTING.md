@@ -1,116 +1,55 @@
 # Contributing to BaseHopper
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to this BaseHopper extension.
-
-## How to Contribute
-
-### Reporting Bugs
-
-If you find a bug, please open an issue with:
-- Clear description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- Chrome version
-- Any error messages
-
-### Suggesting Enhancements
-
-We welcome suggestions for:
-- New example features
-- Better documentation
-- Code improvements
-- UI/UX enhancements
+## Reporting bugs
 
 Open an issue with:
-- Clear description of the enhancement
-- Why it would be useful
-- Example implementation (if applicable)
 
-### Pull Requests
+- Steps to reproduce
+- Expected vs actual behaviour
+- Chrome version and any console errors (service worker + popup DevTools)
 
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/my-new-feature
-   ```
+## Suggesting enhancements
 
-3. **Make your changes**
-   - Follow the existing code style
-   - Keep changes focused and minimal
-   - Add comments for complex code
-   - Update documentation if needed
+Open an issue describing:
 
-4. **Test your changes**
-   - Load extension in Chrome
-   - Test all affected features
-   - Verify no console errors
+- What you want to add or change
+- Why it would be useful for Supabase account switching
+- Any implementation ideas
 
-5. **Commit with clear messages**
-   ```bash
-   git commit -m "Add feature: brief description"
-   ```
+## Pull requests
 
-6. **Push and create PR**
-   ```bash
-   git push origin feature/my-new-feature
-   ```
+1. Fork and create a branch: `git checkout -b feature/my-change`
+2. Load the extension unpacked in Chrome — no build step needed
+3. Make your changes and test manually (see checklist below)
+4. Open a PR with a short description of what changed and why
 
-## Code Guidelines
+## Code guidelines
 
-### JavaScript
-- Use modern ES6+ syntax
-- Use `const` and `let` (not `var`)
-- Add comments for non-obvious code
-- Follow existing naming conventions
-- Handle errors gracefully
+**JavaScript** — ES6+, `const`/`let`, async/await. The extension has three execution contexts that can only communicate via message passing:
 
-### HTML/CSS
-- Use semantic HTML5 elements
-- Keep styles modular and reusable
-- Follow existing design patterns
-- Ensure responsive design
+| Context | File | Can access |
+| --- | --- | --- |
+| Service worker | `background/background.js` | `chrome.storage`, `chrome.cookies`, `chrome.tabs` |
+| Content script | `content/content.js` | Page `localStorage`, DOM |
+| Popup | `popup/popup.js` | Chrome extension APIs, sends messages to background |
 
-### Manifest
-- Follow Chrome Extension guidelines
-- Request minimal permissions
-- Use Manifest V3 features
-- Document permission requirements
+Keep business logic (cookie/storage operations) in the background. Keep DOM/localStorage operations in the content script. Keep the popup thin — it should only send messages and render responses.
 
-## File Structure
+**HTML/CSS** — Styles live inline in `popup/popup.html`. Follow the existing CSS variables (`--bg`, `--green`, `--border`, etc.) for any new UI elements.
 
-When adding new features:
-- Keep related files together
-- Follow existing folder structure
-- Update README if adding new directories
-- Include examples and documentation
+**Manifest** — Do not broaden permissions or host permissions beyond `supabase.com` and `*.supabase.com` without a clear reason.
 
-## Documentation
-
-- Update README.md for major changes
-- Update QUICKSTART.md if affecting setup
-- Add inline comments for complex logic
-- Include examples in documentation
-
-## Testing
+## Testing checklist
 
 Before submitting:
-- [ ] Load extension in Chrome without errors
-- [ ] Test all modified features
-- [ ] Check browser console for errors
-- [ ] Verify on different websites (if applicable)
-- [ ] Test with different settings/configurations
 
-## Questions?
-
-Feel free to open an issue for:
-- Clarification on contributing process
-- Discussion about potential changes
-- General questions about the template
+- [ ] Extension loads in `chrome://extensions/` with no errors
+- [ ] Save a session while logged into supabase.com — check the service worker console logs `Saving session — ls keys:` shows auth keys (not empty)
+- [ ] Switch between two saved accounts — the tab reloads into the correct account
+- [ ] Sync button updates the active account without errors
+- [ ] Delete an account — it is removed from the list
+- [ ] No console errors in popup DevTools or service worker
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
-
----
-
-Thank you for helping make this template better! 🎉
+By contributing, you agree your work will be licensed under the MIT License.

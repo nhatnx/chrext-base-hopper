@@ -1,215 +1,84 @@
-# Chrome Extension Template
+# BaseHopper
 
-A comprehensive Chrome Extension template with modern best practices, ready to use for your next Chrome extension project.
+A Chrome extension for switching between multiple [Supabase](https://supabase.com) dashboard accounts without logging out and back in.
 
 ## Features
 
-- ✅ **Manifest V3** - Uses the latest Chrome Extension manifest version
-- 🎨 **Popup Interface** - Beautiful, responsive popup with example functionality
-- ⚙️ **Background Service Worker** - Handles background tasks and events
-- 📝 **Content Scripts** - Interact with web pages
-- 🔧 **Options Page** - Full-featured settings page
-- 💾 **Chrome Storage API** - Persistent storage examples
-- 🎯 **Example Functions** - Ready-to-use examples for common tasks
+- Save multiple Supabase dashboard sessions
+- Switch between them instantly — the active tab reloads into the target account
+- Auto-detects the logged-in email when you save a session
+- Syncs session state (both cookies and localStorage) on every switch
 
-## Project Structure
+## Installation
 
-```
-chrext-template/
-├── manifest.json           # Extension configuration
-├── package.json           # Project metadata
-├── popup/                 # Popup interface
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── background/            # Background service worker
-│   └── background.js
-├── content/               # Content scripts
-│   ├── content.js
-│   └── content.css
-├── options/               # Options/settings page
-│   ├── options.html
-│   ├── options.css
-│   └── options.js
-└── icons/                 # Extension icons
+1. Clone this repository
+2. Open `chrome://extensions/`, enable **Developer mode**
+3. Click **Load unpacked** and select this directory
+4. Navigate to [supabase.com](https://supabase.com) and log in
+
+## Usage
+
+1. **Save an account** — while logged into a Supabase account, open the extension and click **Add Account**. The email is auto-filled if detected.
+2. **Switch** — click the arrow button next to any saved account. The current tab reloads as that account.
+3. **Sync** — click the sync icon in the header to update the active account's saved session to the current state.
+
+> **Re-save required after updating the extension.** Accounts saved before v1.0 only stored tracking cookies, not auth tokens. Delete and re-save them.
+
+## How it works
+
+Supabase stores its dashboard session in `localStorage` (not cookies). On switch, the extension:
+
+1. Snapshots the current account's `localStorage` auth keys + cookies into Chrome storage
+2. Clears the active session from the tab
+3. Writes the target account's saved session into the tab
+4. Reloads the tab
+
+The content script (`content/content.js`) handles reading and writing `localStorage` on the supabase.com page, since the background service worker cannot access page storage directly.
+
+## Project structure
+
+```text
+├── manifest.json
+├── background/background.js   # service worker — storage, cookie, and message handling
+├── content/content.js         # injected into supabase.com — reads/writes localStorage
+├── popup/
+│   ├── popup.html             # UI + inline styles
+│   └── popup.js               # popup logic, talks to background via message passing
+└── icons/
     ├── icon16.png
     ├── icon48.png
     └── icon128.png
 ```
 
-## Getting Started
-
-### Prerequisites
-
-- Google Chrome or Chromium-based browser
-- Basic knowledge of HTML, CSS, and JavaScript
-
-### Installation
-
-1. **Clone or download this repository**
-   ```bash
-   git clone <your-repository-url>
-   cd chrext-template
-   ```
-
-2. **Load the extension in Chrome**
-   - Open Chrome and navigate to `chrome://extensions/`
-   - Enable "Developer mode" (toggle in top right)
-   - Click "Load unpacked"
-   - Select the project directory
-
-3. **Test the extension**
-   - Click the extension icon in your browser toolbar
-   - Try the example buttons
-   - Visit any website to see content script in action
-   - Right-click the extension icon → Options to view settings
-
-## Customization
-
-### 1. Update Manifest
-
-Edit `manifest.json` to customize your extension:
-
-```json
-{
-  "name": "Your Extension Name",
-  "description": "Your extension description",
-  "version": "1.0.0",
-  ...
-}
-```
-
-### 2. Modify Popup
-
-Edit files in `popup/` directory to customize the popup interface:
-- `popup.html` - Structure
-- `popup.css` - Styling
-- `popup.js` - Functionality
-
-### 3. Background Tasks
-
-Edit `background/background.js` to add background tasks, event listeners, and service worker logic.
-
-### 4. Content Scripts
-
-Modify `content/content.js` and `content/content.css` to interact with web pages.
-
-### 5. Options Page
-
-Customize `options/` directory files to add more settings and preferences.
-
-### 6. Icons
-
-Replace icon files in `icons/` directory with your own:
-- `icon16.png` - 16x16 pixels
-- `icon48.png` - 48x48 pixels
-- `icon128.png` - 128x128 pixels
-
-## Features Included
-
-### Popup Interface
-- Clean, modern UI with gradient header
-- Example buttons demonstrating:
-  - Executing scripts on active tab
-  - Getting tab information
-  - Opening options page
-- Chrome Storage API integration
-
-### Background Service Worker
-- Installation event handler
-- Message passing between components
-- Tab update monitoring
-- Storage API examples
-
-### Content Scripts
-- Runs on all web pages
-- Message listener for communication
-- Example functions (highlight text, add indicators)
-- Custom styling injection
-
-### Options Page
-- Toggle switches for settings
-- Theme selection
-- Custom URL patterns
-- Auto-save functionality
-- Persistent storage
-
 ## Permissions
 
-The template includes these permissions in `manifest.json`:
+| Permission | Why |
+| --- | --- |
+| `storage` | Persist saved accounts |
+| `cookies` | Clear and restore Supabase session cookies |
+| `tabs` | Detect active tab URL, reload after switch |
+| `scripting` | Send messages to content script |
 
-- `storage` - For saving user preferences
-- `activeTab` - For interacting with the current tab
-- `scripting` - For executing scripts in pages
+Host permissions are scoped to `https://supabase.com/*` and `https://*.supabase.com/*` only.
 
-### Host Permissions
-- `http://*/*` and `https://*/*` - For content scripts on all URLs
+## Debugging
 
-**Note:** Remove unused permissions before publishing.
-
-## Development
-
-### Making Changes
-
-1. Make your code changes
-2. Go to `chrome://extensions/`
-3. Click the refresh icon on your extension card
-4. Test your changes
-
-### Debugging
-
-- **Popup**: Right-click popup → Inspect
-- **Background**: Click "service worker" link in extension card
-- **Content Script**: Open DevTools on any webpage → Console tab
-- **Options Page**: Right-click options page → Inspect
-
-## Publishing
-
-### Before Publishing
-
-1. **Test thoroughly** on different websites
-2. **Update icons** with your own design
-3. **Remove unused permissions** from manifest.json
-4. **Update metadata** (name, description, version)
-5. **Add privacy policy** if collecting data
-6. **Create promotional images** (screenshots, etc.)
-
-### Chrome Web Store
-
-1. Create a developer account at [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
-2. Pay one-time $5 registration fee
-3. Zip your extension directory
-4. Upload and fill in store listing details
-5. Submit for review
-
-## Best Practices
-
-- ✅ Use Manifest V3 (V2 is deprecated)
-- ✅ Request minimal permissions
-- ✅ Keep background scripts lightweight
-- ✅ Use content scripts sparingly
-- ✅ Store sensitive data securely
-- ✅ Follow Chrome's [extension quality guidelines](https://developer.chrome.com/docs/webstore/program-policies/)
-
-## Resources
-
-- [Chrome Extension Documentation](https://developer.chrome.com/docs/extensions/)
-- [Manifest V3 Migration Guide](https://developer.chrome.com/docs/extensions/mv3/intro/)
-- [Chrome Web Store](https://chrome.google.com/webstore/category/extensions)
-- [Extension Samples](https://github.com/GoogleChrome/chrome-extensions-samples)
-
-## License
-
-MIT License - Feel free to use this template for your projects!
+- **Popup:** right-click the extension icon → Inspect
+- **Service worker:** `chrome://extensions/` → BaseHopper → click "service worker"
+- **Content script:** DevTools on supabase.com → Console
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome!
+Contributions are welcome — bug fixes, new features, and improvements of any size.
 
-## Author
+1. Fork the repo and create a branch (`git checkout -b feature/my-change`)
+2. Load the extension unpacked in Chrome to test locally (no build step)
+3. Open a pull request with a short description of what changed and why
 
-Created as a comprehensive starting point for Chrome Extension development.
+For bugs, open an issue with steps to reproduce and your Chrome version. For larger features, opening an issue to discuss first is appreciated.
 
----
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code guidelines and the testing checklist.
 
-**Happy Extension Building! 🚀**
+## License
+
+MIT

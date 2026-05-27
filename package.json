@@ -1,7 +1,7 @@
 {
   "name": "BaseHopper",
   "version": "1.0.0",
-  "description": "A simple Chrome extension to switch between different Supabase projects",
+  "description": "A simple Chrome extension to switch between different Supabase accounts",
   "scripts": {
     "dev": "echo 'Development mode - Load the extension folder directly in Chrome'",
     "build": "echo 'No build step required - Ready to load in Chrome'"
