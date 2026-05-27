@@ -8,8 +8,7 @@ build/
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
+.claude/
 
 # OS
 .DS_Store

@@ -1,17 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension Template",
+  "name": "BaseHopper",
   "version": "1.0.0",
-  "description": "A comprehensive Chrome Extension template with popup, background worker, content scripts, and options page",
-  "permissions": [
-    "storage",
-    "activeTab",
-    "scripting"
-  ],
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
+  "description": "Quickly switch between multiple Supabase accounts",
+  "permissions": ["storage", "cookies", "tabs", "scripting"],
+  "host_permissions": ["https://supabase.com/*", "https://*.supabase.com/*"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
@@ -25,12 +18,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://supabase.com/*", "https://*.supabase.com/*"],
       "js": ["content/content.js"],
-      "css": ["content/content.css"]
+      "run_at": "document_idle"
     }
   ],
-  "options_page": "options/options.html",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

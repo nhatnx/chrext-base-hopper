@@ -1,6 +1,6 @@
-# Contributing to Chrome Extension Template
+# Contributing to BaseHopper
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to this Chrome Extension template.
+Thank you for your interest in contributing! This document provides guidelines for contributing to this BaseHopper extension.
 
 ## How to Contribute
 
