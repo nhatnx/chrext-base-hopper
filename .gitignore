@@ -17,3 +17,5 @@ Thumbs.db
 
 # Local Claude Code settings (user-specific permissions)
 .claude/settings.local.json
+
+assets/

@@ -64,6 +64,23 @@ async function checkCurrentTab() {
   }
 }
 
+// --- Account color palette ---
+const COLOR_PALETTE = [
+  { color: '#3ecf8e', bg: '#3ecf8e22', border: '#3ecf8e55' },
+  { color: '#60a5fa', bg: '#60a5fa22', border: '#60a5fa55' },
+  { color: '#a78bfa', bg: '#a78bfa22', border: '#a78bfa55' },
+  { color: '#fb923c', bg: '#fb923c22', border: '#fb923c55' },
+  { color: '#f472b6', bg: '#f472b622', border: '#f472b655' },
+  { color: '#22d3ee', bg: '#22d3ee22', border: '#22d3ee55' },
+  { color: '#facc15', bg: '#facc1522', border: '#facc1555' },
+];
+
+function getAccountColor(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return COLOR_PALETTE[hash % COLOR_PALETTE.length];
+}
+
 // --- Render accounts ---
 function renderAccounts() {
   // Remove all account items (keep empty state)
@@ -78,18 +95,23 @@ function renderAccounts() {
 
   accounts.forEach(account => {
     const isActive = account.id === activeAccountId;
+    const ac = getAccountColor(account.id);
     const item = document.createElement('div');
     item.className = `account-item ${isActive ? 'active' : ''}`;
     item.dataset.id = account.id;
+    if (isActive) {
+      item.style.background = ac.bg;
+      item.style.borderColor = ac.color + '88';
+    }
 
     item.innerHTML = `
-      <div class="avatar">${account.avatar || account.name.charAt(0).toUpperCase()}</div>
+      <div class="avatar" style="background: linear-gradient(135deg, ${ac.bg}, ${ac.border}); border-color: ${ac.border}; color: ${ac.color};">${account.avatar || account.name.charAt(0).toUpperCase()}</div>
       <div class="account-info">
         <div class="account-name">${escHtml(account.name)}</div>
         <div class="account-email">${escHtml(account.email || 'No email')} · Saved ${formatDate(account.lastSaved)}</div>
       </div>
       ${isActive
-        ? '<span class="active-badge">Active</span>'
+        ? `<span class="active-badge" style="color: ${ac.color}; background: ${ac.bg}; border-color: ${ac.color}44;">Active</span>`
         : `<div class="account-actions">
             <button class="action-btn switch-btn" title="Switch to this account" data-id="${account.id}">
               <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
