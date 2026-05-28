@@ -55,7 +55,7 @@ async function checkCurrentTab() {
         const parts = resp.email.split('@');
         if (!nameInput.value) nameInput.value = parts[0];
       }
-    } catch {}
+    } catch { }
   } else {
     isOnSupabase = false;
     currentTabId = null;
@@ -103,12 +103,13 @@ function renderAccounts() {
       item.style.background = ac.bg;
       item.style.borderColor = ac.color + '88';
     }
+    const accountEmail = `${escHtml(account.email || 'No email')} · Saved ${formatDate(account.lastSaved)}`;
 
     item.innerHTML = `
       <div class="avatar" style="background: linear-gradient(135deg, ${ac.bg}, ${ac.border}); border-color: ${ac.border}; color: ${ac.color};">${account.avatar || account.name.charAt(0).toUpperCase()}</div>
       <div class="account-info">
         <div class="account-name">${escHtml(account.name)}</div>
-        <div class="account-email">${escHtml(account.email || 'No email')} · Saved ${formatDate(account.lastSaved)}</div>
+        <div class="account-email" title="${accountEmail}">${accountEmail}</div>
       </div>
       ${isActive
         ? `<span class="active-badge" style="color: ${ac.color}; background: ${ac.bg}; border-color: ${ac.color}44;">Active</span>`
@@ -171,7 +172,7 @@ function renderAccounts() {
 }
 
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // --- Load accounts from storage ---
