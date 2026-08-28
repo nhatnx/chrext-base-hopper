@@ -1,16 +1,27 @@
 {
   "name": "BaseHopper",
-  "version": "1.0.0",
-  "description": "A simple Chrome extension to switch between different Supabase accounts",
+  "version": "2.1.0",
+  "description": "Quickly switch between multiple Supabase accounts and manage all projects from one dashboard",
+  "private": true,
   "scripts": {
-    "dev": "echo 'Development mode - Load the extension folder directly in Chrome'",
-    "build": "echo 'No build step required - Ready to load in Chrome'"
+    "dev": "echo 'No build step - load this folder via chrome://extensions/ -> Load unpacked'",
+    "build": "echo 'No build step - load this folder via chrome://extensions/ -> Load unpacked'"
   },
   "keywords": [
     "chrome",
-    "extension",
-    "supabase"
+    "chrome-extension",
+    "manifest-v3",
+    "supabase",
+    "session-switcher"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nhatnx/chrext-base-hopper.git"
+  },
+  "homepage": "https://github.com/nhatnx/chrext-base-hopper#readme",
+  "bugs": {
+    "url": "https://github.com/nhatnx/chrext-base-hopper/issues"
+  },
   "author": "Stork",
   "license": "MIT"
 }
