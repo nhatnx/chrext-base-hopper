@@ -1,446 +1,562 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BaseHopper</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BaseHopper</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  :root {
-    --bg: #0f0f0f;
-    --bg2: #1a1a1a;
-    --bg3: #242424;
-    --border: #2e2e2e;
-    --border-active: #3ecf8e;
-    --green: #3ecf8e;
-    --green-dim: #3ecf8e22;
-    --text: #efefef;
-    --text-muted: #888;
-    --text-dim: #555;
-    --red: #f87171;
-    --red-dim: #f8717122;
-    --radius: 10px;
-  }
+    :root {
+      --bg: #0f0f0f;
+      --bg2: #1a1a1a;
+      --bg3: #242424;
+      --border: #2e2e2e;
+      --border-active: #3ecf8e;
+      --green: #3ecf8e;
+      --green-dim: #3ecf8e22;
+      --text: #efefef;
+      --text-muted: #888;
+      --text-dim: #555;
+      --red: #f87171;
+      --red-dim: #f8717122;
+      --radius: 10px;
+    }
 
-  body {
-    width: 340px;
-    min-height: 200px;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    line-height: 1.5;
-  }
+    body {
+      width: 340px;
+      min-height: 200px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+    }
 
-  /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px 12px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-  }
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
 
-  .logo {
-    width: 28px;
-    height: 28px;
-    flex-shrink: 0;
-  }
+    .logo {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+    }
 
-  .header-text h1 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: -0.2px;
-  }
+    .header-text h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
 
-  .header-text p {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
+    .header-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
 
-  .header-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 6px;
-  }
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+    }
 
-  .icon-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-  }
-  .icon-btn:hover { background: var(--bg3); color: var(--text); border-color: #444; }
-  .icon-btn svg { width: 14px; height: 14px; }
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
 
-  /* Account list */
-  .account-list {
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 280px;
-    overflow-y: auto;
-  }
+    .icon-btn:hover {
+      background: var(--bg3);
+      color: var(--text);
+      border-color: #444;
+    }
 
-  .account-list::-webkit-scrollbar { width: 4px; }
-  .account-list::-webkit-scrollbar-track { background: transparent; }
-  .account-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .icon-btn svg {
+      width: 14px;
+      height: 14px;
+    }
 
-  .account-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
-    border-radius: var(--radius);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-  }
-  .account-item:hover { background: var(--bg2); border-color: var(--border); }
-  .account-item.active {
-    background: var(--green-dim);
-    border-color: var(--border-active);
-  }
+    /* Account list */
+    .account-list {
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
 
-  .avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #3ecf8e33, #3ecf8e66);
-    border: 1px solid #3ecf8e55;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    font-size: 13px;
-    color: var(--green);
-    flex-shrink: 0;
-    text-transform: uppercase;
-  }
+    .account-list::-webkit-scrollbar {
+      width: 4px;
+    }
 
-  .account-info {
-    flex: 1;
-    min-width: 0;
-  }
+    .account-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
-  .account-name {
-    font-weight: 500;
-    font-size: 13px;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+    .account-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
 
-  .account-email {
-    font-size: 11px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: 'DM Mono', monospace;
-  }
+    .account-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
 
-  .active-badge {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--green);
-    background: var(--green-dim);
-    border: 1px solid #3ecf8e44;
-    padding: 2px 7px;
-    border-radius: 20px;
-    letter-spacing: 0.3px;
-    flex-shrink: 0;
-  }
+    .account-item:hover {
+      background: var(--bg2);
+      border-color: var(--border);
+    }
 
-  .account-actions {
-    display: flex;
-    gap: 3px;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  .account-item:hover .account-actions { opacity: 1; }
+    .account-item.active {
+      background: var(--green-dim);
+      border-color: var(--border-active);
+    }
 
-  .action-btn {
-    width: 24px;
-    height: 24px;
-    border-radius: 5px;
-    border: none;
-    background: transparent;
-    color: var(--text-dim);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.12s;
-  }
-  .action-btn:hover { background: var(--bg3); color: var(--text-muted); }
-  .action-btn.delete:hover { background: var(--red-dim); color: var(--red); }
-  .action-btn svg { width: 13px; height: 13px; }
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #3ecf8e33, #3ecf8e66);
+      border: 1px solid #3ecf8e55;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--green);
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
 
-  /* Empty state */
-  .empty-state {
-    padding: 32px 20px;
-    text-align: center;
-    color: var(--text-muted);
-  }
+    .account-info {
+      flex: 1;
+      min-width: 0;
+    }
 
-  .empty-icon {
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 12px;
-    background: var(--bg2);
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-dim);
-  }
+    .account-name {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-  .empty-state h3 { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-  .empty-state p { font-size: 12px; line-height: 1.5; }
+    .account-email {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: 'DM Mono', monospace;
+    }
 
-  /* Footer */
-  .footer {
-    padding: 10px 10px 10px;
-    border-top: 1px solid var(--border);
-    display: flex;
-    gap: 6px;
-  }
+    .active-badge {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--green);
+      background: var(--green-dim);
+      border: 1px solid #3ecf8e44;
+      padding: 2px 7px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
 
-  .btn {
-    flex: 1;
-    height: 32px;
-    border-radius: 7px;
-    border: 1px solid var(--border);
-    background: var(--bg2);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-  .btn:hover { background: var(--bg3); border-color: #444; }
-  .btn svg { width: 13px; height: 13px; }
+    .account-actions {
+      display: flex;
+      gap: 3px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
 
-  .btn-primary {
-    background: var(--green);
-    border-color: var(--green);
-    color: #0a1a12;
-    font-weight: 600;
-  }
-  .btn-primary:hover { background: #4edfa0; border-color: #4edfa0; }
+    .account-item:hover .account-actions {
+      opacity: 1;
+    }
 
-  /* Add account form */
-  .form-panel {
-    padding: 12px 12px 0;
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .form-panel.visible { display: flex; }
+    .action-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.12s;
+    }
 
-  .form-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-bottom: 2px;
-  }
+    .action-btn:hover {
+      background: var(--bg3);
+      color: var(--text-muted);
+    }
 
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+    .action-btn.delete:hover {
+      background: var(--red-dim);
+      color: var(--red);
+    }
 
-  label {
-    font-size: 11px;
-    color: var(--text-muted);
-  }
+    .action-btn svg {
+      width: 13px;
+      height: 13px;
+    }
 
-  input {
-    width: 100%;
-    height: 32px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    padding: 0 10px;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  input:focus { border-color: var(--green); }
-  input::placeholder { color: var(--text-dim); }
+    /* Empty state */
+    .empty-state {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-muted);
+    }
 
-  .form-actions {
-    display: flex;
-    gap: 6px;
-    padding-bottom: 10px;
-    padding-top: 2px;
-  }
+    .empty-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      background: var(--bg2);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+    }
 
-  /* Status toast */
-  .toast {
-    position: fixed;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 7px 14px;
-    font-size: 12px;
-    color: var(--text);
-    opacity: 0;
-    transition: all 0.2s;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 999;
-  }
-  .toast.visible {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-  .toast.success { border-color: var(--green); color: var(--green); }
-  .toast.error { border-color: var(--red); color: var(--red); }
+    .empty-state h3 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
 
-  /* Saving indicator */
-  .saving-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    animation: pulse 1.5s infinite;
-    display: inline-block;
-  }
+    .empty-state p {
+      font-size: 12px;
+      line-height: 1.5;
+    }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
+    /* Footer */
+    .footer {
+      padding: 10px 10px 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 6px;
+    }
 
-  /* Info bar */
-  .info-bar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-  .info-bar svg { color: var(--green); flex-shrink: 0; }
+    .btn {
+      flex: 1;
+      height: 32px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
 
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 0 10px;
-  }
-</style>
+    .btn:hover {
+      background: var(--bg3);
+      border-color: #444;
+    }
+
+    .btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      border-color: var(--green);
+      color: #0a1a12;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      background: #4edfa0;
+      border-color: #4edfa0;
+    }
+
+    /* Add account form */
+    .form-panel {
+      padding: 12px 12px 0;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-panel.visible {
+      display: flex;
+    }
+
+    .form-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 2px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    input {
+      width: 100%;
+      height: 32px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 0 10px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus {
+      border-color: var(--green);
+    }
+
+    input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 6px;
+      padding-bottom: 10px;
+      padding-top: 2px;
+    }
+
+    /* Status toast */
+    .toast {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0;
+      transition: all 0.2s;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .toast.error {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* Saving indicator */
+    .saving-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+      display: inline-block;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    /* Info bar */
+    .info-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .info-bar svg {
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 10px;
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Header -->
-<div class="header">
-  <img class="logo" src="../icons/icon48.png" alt="BaseHopper" />
-  <div class="header-text">
-    <h1>BaseHopper</h1>
-    <p>Manage multiple Supabase accounts</p>
-  </div>
-  <div class="header-actions">
-    <button class="icon-btn" id="refresh-btn" title="Sync current session">
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2 8a6 6 0 0 1 10.5-3.95" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        <path d="M14 8a6 6 0 0 1-10.5 3.95" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        <path d="M11 2.5l1.5 1.55-1.5 1.55" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M5 13.5l-1.5-1.55 1.5-1.55" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-  </div>
-</div>
-
-<!-- Info bar (shown when on supabase.com) -->
-<div class="info-bar" id="info-bar" style="display:none">
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-    <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
-    <path d="M8 7.5V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-    <circle cx="8" cy="5.5" r="0.75" fill="currentColor"/>
-  </svg>
-  <span id="info-text">Open supabase.com to switch accounts</span>
-</div>
-
-<!-- Add account form -->
-<div class="form-panel" id="form-panel">
-  <div class="form-title">Save current session as</div>
-  <div class="field">
-    <label for="account-name">Display name</label>
-    <input type="text" id="account-name" placeholder="e.g. Personal, Work, Client A" />
-  </div>
-  <div class="field">
-    <label for="account-email">Email (optional label)</label>
-    <input type="text" id="account-email" placeholder="me@example.com" />
-  </div>
-  <div class="form-actions">
-    <button class="btn" id="cancel-btn">Cancel</button>
-    <button class="btn btn-primary" id="save-btn">
-      <svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5L6 12L13.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Save
-    </button>
-  </div>
-  <div class="divider"></div>
-</div>
-
-<!-- Account list -->
-<div class="account-list" id="account-list">
-  <div class="empty-state" id="empty-state">
-    <div class="empty-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M20 21C20 18.2386 16.4183 16 12 16C7.58172 16 4 18.2386 4 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
+  <!-- Header -->
+  <div class="header">
+    <img class="logo" src="../icons/icon48.png" alt="BaseHopper" />
+    <div class="header-text">
+      <h1>BaseHopper</h1>
+      <p>Manage multiple Supabase accounts</p>
     </div>
-    <h3>No accounts saved yet</h3>
-    <p>Log in to supabase.com then click<br/>"Add Account" to save your session</p>
+    <div class="header-actions">
+      <button class="icon-btn" id="refresh-btn" title="Sync current session">
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 8a6 6 0 0 1 10.5-3.95" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          <path d="M14 8a6 6 0 0 1-10.5 3.95" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          <path d="M11 2.5l1.5 1.55-1.5 1.55" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <path d="M5 13.5l-1.5-1.55 1.5-1.55" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
   </div>
-</div>
 
-<!-- Footer -->
-<div class="footer" id="footer">
-  <button class="btn btn-primary" id="add-btn">
-    <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    Add Account
-  </button>
-</div>
+  <!-- Info bar (shown when on supabase.com) -->
+  <div class="info-bar" id="info-bar" style="display:none">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4" />
+      <path d="M8 7.5V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+      <circle cx="8" cy="5.5" r="0.75" fill="currentColor" />
+    </svg>
+    <span id="info-text">Open supabase.com to switch accounts</span>
+  </div>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+  <!-- Add account form -->
+  <div class="form-panel" id="form-panel">
+    <div class="form-title">Save current session as</div>
+    <div class="field">
+      <label for="account-name">Display name</label>
+      <input type="text" id="account-name" placeholder="e.g. Personal, Work, Client A" />
+    </div>
+    <div class="field">
+      <label for="account-email">Email (optional label)</label>
+      <input type="text" id="account-email" placeholder="me@example.com" />
+    </div>
+    <div class="form-actions">
+      <button class="btn" id="cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="save-btn">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M2.5 8.5L6 12L13.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        Save
+      </button>
+    </div>
+    <div class="divider"></div>
+  </div>
 
-<script src="./popup.js"></script>
+  <!-- Account list -->
+  <div class="account-list" id="account-list">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z"
+            stroke="currentColor" stroke-width="1.5" />
+          <path d="M20 21C20 18.2386 16.4183 16 12 16C7.58172 16 4 18.2386 4 21" stroke="currentColor"
+            stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+      </div>
+      <h3>No accounts saved yet</h3>
+      <p>Log in to supabase.com then click<br />"Add Account" to save your session</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" id="footer">
+    <button class="btn" id="dashboard-btn" title="Open the full dashboard">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3" />
+        <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3" />
+        <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3" />
+        <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3" />
+      </svg>
+      Dashboard
+    </button>
+    <button class="btn btn-primary" id="add-btn">
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+      </svg>
+      Add Account
+    </button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="./popup.js"></script>
 </body>
+
 </html>

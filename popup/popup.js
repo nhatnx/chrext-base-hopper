@@ -6,20 +6,23 @@ let isOnSupabase = false;
 let currentTabId = null;
 let toastTimer = null;
 
+const $ = id => document.getElementById(id);
+
 // DOM refs
-const accountList = document.getElementById('account-list');
-const emptyState = document.getElementById('empty-state');
-const formPanel = document.getElementById('form-panel');
-const footer = document.getElementById('footer');
-const addBtn = document.getElementById('add-btn');
-const saveBtn = document.getElementById('save-btn');
-const cancelBtn = document.getElementById('cancel-btn');
-const refreshBtn = document.getElementById('refresh-btn');
-const nameInput = document.getElementById('account-name');
-const emailInput = document.getElementById('account-email');
-const toast = document.getElementById('toast');
-const infoBar = document.getElementById('info-bar');
-const infoText = document.getElementById('info-text');
+const accountList = $('account-list');
+const emptyState = $('empty-state');
+const formPanel = $('form-panel');
+const footer = $('footer');
+const addBtn = $('add-btn');
+const saveBtn = $('save-btn');
+const cancelBtn = $('cancel-btn');
+const refreshBtn = $('refresh-btn');
+const dashboardBtn = $('dashboard-btn');
+const nameInput = $('account-name');
+const emailInput = $('account-email');
+const toast = $('toast');
+const infoBar = $('info-bar');
+const infoText = $('info-text');
 
 // --- Helpers ---
 function showToast(msg, type = 'success') {
@@ -251,6 +254,10 @@ addBtn.addEventListener('click', showForm);
 cancelBtn.addEventListener('click', hideForm);
 refreshBtn.addEventListener('click', handleRefresh);
 saveBtn.addEventListener('click', handleSave);
+dashboardBtn.addEventListener('click', async () => {
+  await send({ type: 'OPEN_DASHBOARD' });
+  window.close();
+});
 nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSave(); });
 emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSave(); });
 
