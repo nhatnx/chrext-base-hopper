@@ -1,10 +1,15 @@
 {
   "manifest_version": 3,
   "name": "BaseHopper",
-  "version": "1.0.0",
-  "description": "Quickly switch between multiple Supabase accounts",
+  "version": "2.1.0",
+  "description": "Quickly switch between multiple Supabase accounts and manage all projects from one dashboard",
   "permissions": ["storage", "cookies", "tabs", "scripting"],
-  "host_permissions": ["https://supabase.com/*", "https://*.supabase.com/*"],
+  "host_permissions": [
+    "https://supabase.com/*",
+    "https://*.supabase.com/*",
+    "https://api.supabase.com/*"
+  ],
+  "incognito": "split",
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
