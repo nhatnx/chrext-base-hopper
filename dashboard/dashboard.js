@@ -6,9 +6,8 @@ let pausedSince = {};     // { 'accountId:projectRef': timestamp } — owned by 
 let currentFilter = 'all';
 let toastTimer = null;
 
-const GRACE_DAYS = 90;          // Supabase deletes a paused project's data after 90 days
-const URGENT_DAYS = 30;         // show the ⚠ when this little time is left
-const SESSION_WINDOW_DAYS = 30; // a saved session older than this needs a re-login
+const GRACE_DAYS = 90;   // Supabase deletes a paused project's data after 90 days
+const URGENT_DAYS = 30;  // show the ⚠ when this little time is left
 const DAY = 86400000;
 
 const SIGN_IN_URL = 'https://supabase.com/dashboard/sign-in';
@@ -64,39 +63,8 @@ function accountColor(id) {
   return COLOR_PALETTE[hash % COLOR_PALETTE.length];
 }
 
-// ── Session freshness ────────────────────────────────────────────────────────
-// Supabase access tokens live ~1h, so an expired one means nothing on its own —
-// what matters is whether we still hold a refresh token that was seen recently.
-function sessionInfo(account) {
-  let hasRefresh = false;
-  let accessExpiresAt = 0;
-
-  for (const raw of Object.values(account.lsEntries || {})) {
-    try {
-      const val = JSON.parse(raw);
-      const session = val?.currentSession || val;
-      if (session?.refresh_token) hasRefresh = true;
-      if (typeof session?.expires_at === 'number') {
-        accessExpiresAt = Math.max(accessExpiresAt, session.expires_at * 1000);
-      }
-    } catch { /* not a JSON auth entry */ }
-  }
-
-  if (!hasRefresh && !(account.cookies || []).length) {
-    return { live: false, label: 'No session saved' };
-  }
-
-  const now = Date.now();
-  if (accessExpiresAt > now) return { live: true, label: 'Session live' };
-
-  const lastSeen = Math.max(accessExpiresAt, account.lastSaved || account.createdAt || 0);
-  const live = hasRefresh && (now - lastSeen) < SESSION_WINDOW_DAYS * DAY;
-  return {
-    live,
-    label: live ? 'Session live' : 'Session expired',
-    lastSeen,
-  };
-}
+// Session freshness lives in lib/session.js, shared with the popup
+const sessionInfo = account => BaseHopperSession.info(account);
 
 // ── Project status ───────────────────────────────────────────────────────────
 // Management API statuses: ACTIVE_HEALTHY, ACTIVE_UNHEALTHY, INACTIVE, PAUSING,
@@ -230,7 +198,8 @@ function accountHeader(account, data) {
       <span style="color:var(--green)">Session live</span>`;
   } else {
     statusHtml = `<span class="dot" style="background:#555"></span>
-      <span style="color:var(--muted)">${esc(session.label)} · <button class="link relogin-btn">Re-login</button></span>`;
+      <span style="color:var(--muted)">${esc(session.label)} ·
+        <button class="link relogin-btn" data-acct="${esc(account.id)}">Re-login</button></span>`;
   }
 
   const hdr = document.createElement('div');
@@ -408,8 +377,7 @@ main.addEventListener('click', async (e) => {
   } else if (btn.classList.contains('docs-btn')) {
     openTab(BACKUP_DOCS_URL);
   } else if (btn.classList.contains('relogin-btn')) {
-    openTab(SIGN_IN_URL);
-    showToast('Log in, then hit Sync in the BaseHopper popup');
+    await startRelogin(accountId, btn);
   } else if (btn.classList.contains('token-save')) {
     await saveToken(accountId, btn);
   } else if (btn.classList.contains('resume-btn')) {
@@ -452,6 +420,20 @@ async function refreshProject(accountId, ref, btn) {
 
   card?.replaceWith(projectCard(accountId, res.project, info));
   renderSummary();
+}
+
+// Wipes only the live browser session, then hands the sign-in page to the user.
+// The service worker writes the new session back into this same account.
+async function startRelogin(accountId, btn) {
+  const account = accounts.find(a => a.id === accountId);
+  btn.disabled = true;
+  const res = await send({ type: 'RELOGIN_ACCOUNT', accountId });
+  if (res?.success) {
+    showToast(`Log in as ${account?.email || account?.name} in the tab that just opened`);
+  } else {
+    showToast('Could not start re-login: ' + (res?.error || 'unknown error'), 'err');
+    btn.disabled = false;
+  }
 }
 
 async function refreshAccount(accountId, btn) {
@@ -533,6 +515,13 @@ $('btn-refresh').addEventListener('click', async () => {
 $('btn-add').addEventListener('click', () => {
   openTab(SIGN_IN_URL);
   showToast('Log in, then save the session from the BaseHopper popup');
+});
+
+// Keep session badges in step with re-logins finished elsewhere
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area !== 'local' || !changes.accounts) return;
+  await loadAccounts();
+  render();
 });
 
 // ── Init ─────────────────────────────────────────────────────────────────────

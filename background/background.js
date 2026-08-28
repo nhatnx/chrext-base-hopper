@@ -57,6 +57,185 @@ async function setAuthStorage(tabId, entries) {
   }
 }
 
+// ── Re-login ─────────────────────────────────────────────────────────────────
+// Re-authenticating one stale account without disturbing the others: wipe only
+// the browser's live Supabase state, log in, then write the result back into
+// that same account record (keeping its name, colour and access token).
+
+const SIGN_IN_URL = 'https://supabase.com/dashboard/sign-in';
+const RELOGIN_TIMEOUT_MS = 30 * 60 * 1000;
+
+// An abandoned re-login shouldn't capture a session half an hour later
+async function getPendingRelogin() {
+  const { pendingRelogin } = await chrome.storage.local.get('pendingRelogin');
+  if (!pendingRelogin) return null;
+  if (Date.now() - (pendingRelogin.startedAt || 0) > RELOGIN_TIMEOUT_MS) {
+    await chrome.storage.local.set({ pendingRelogin: null });
+    await setReloginBadge(false);
+    return null;
+  }
+  return pendingRelogin;
+}
+
+function hasLiveAuth(lsEntries) {
+  for (const raw of Object.values(lsEntries || {})) {
+    try {
+      const val = JSON.parse(raw);
+      const session = val?.currentSession || val;
+      if (session?.refresh_token) return true;
+    } catch { /* not a JSON auth entry */ }
+  }
+  return false;
+}
+
+async function captureSession(tabId) {
+  const [cookies, lsEntries] = await Promise.all([
+    getSupabaseCookies(),
+    getAuthStorage(tabId),
+  ]);
+  return { cookies, lsEntries };
+}
+
+async function updateAccount(accountId, patch) {
+  const { accounts = [] } = await chrome.storage.local.get('accounts');
+  const updated = accounts.map(a => (a.id === accountId ? { ...a, ...patch } : a));
+  await chrome.storage.local.set({ accounts: updated });
+  return updated.find(a => a.id === accountId) || null;
+}
+
+async function setReloginBadge(on) {
+  try {
+    await chrome.action.setBadgeText({ text: on ? '•' : '' });
+    if (on) await chrome.action.setBadgeBackgroundColor({ color: '#f59e0b' });
+  } catch { /* action API unavailable */ }
+}
+
+async function findSupabaseTab() {
+  const tabs = await chrome.tabs.query({ url: ['https://supabase.com/*', 'https://*.supabase.com/*'] });
+  return tabs[0] || null;
+}
+
+function waitForTabLoad(tabId, timeout = 15000) {
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = ok => {
+      if (settled) return;
+      settled = true;
+      chrome.tabs.onUpdated.removeListener(listener);
+      clearTimeout(timer);
+      resolve(ok);
+    };
+    const listener = (id, info) => { if (id === tabId && info.status === 'complete') finish(true); };
+    const timer = setTimeout(() => finish(false), timeout);
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+}
+
+async function startRelogin(accountId, tabId) {
+  const { accounts = [], activeAccountId } = await chrome.storage.local.get(['accounts', 'activeAccountId']);
+  const account = accounts.find(a => a.id === accountId);
+  if (!account) return { success: false, error: 'Account not found' };
+
+  // Don't lose the account that is logged in right now
+  if (activeAccountId && activeAccountId !== accountId) {
+    const snapshot = await captureSession(tabId);
+    if (hasLiveAuth(snapshot.lsEntries)) {
+      await updateAccount(activeAccountId, { ...snapshot, lastSaved: Date.now() });
+    }
+  }
+
+  // Clearing localStorage needs a supabase.com tab — that's where the session lives
+  let tab = tabId ? await chrome.tabs.get(tabId).catch(() => null) : null;
+  if (!tab?.url?.includes('supabase.com')) tab = await findSupabaseTab();
+  if (tab) {
+    await chrome.tabs.update(tab.id, { active: true });
+    // The content script can only answer once the page has finished loading
+    if (tab.status !== 'complete') await waitForTabLoad(tab.id);
+  } else {
+    tab = await chrome.tabs.create({ url: SIGN_IN_URL, active: true });
+    await waitForTabLoad(tab.id);
+  }
+
+  await clearSupabaseCookies();
+  await setAuthStorage(tab.id, {});
+
+  await chrome.storage.local.set({
+    activeAccountId: accountId,
+    pendingRelogin: { accountId, name: account.name, email: account.email || '', startedAt: Date.now() },
+    reloginResult: null,
+  });
+  await setReloginBadge(true);
+
+  // Land on a clean sign-in page now that cookies and localStorage are gone
+  await chrome.tabs.update(tab.id, { url: SIGN_IN_URL });
+  try { await chrome.windows.update(tab.windowId, { focused: true }); } catch { /* no window */ }
+
+  return { success: true, tabId: tab.id };
+}
+
+async function finishRelogin(tabId) {
+  const pendingRelogin = await getPendingRelogin();
+  if (!pendingRelogin) return { success: false, error: 'No re-login in progress' };
+
+  const snapshot = await captureSession(tabId);
+  if (!hasLiveAuth(snapshot.lsEntries)) return { success: false, error: 'NOT_LOGGED_IN' };
+
+  let email = '';
+  try {
+    const resp = await chrome.tabs.sendMessage(tabId, { type: 'GET_CURRENT_USER' });
+    email = resp?.email || '';
+  } catch { /* content script not reachable */ }
+
+  // Refuse to write someone else's session into this account
+  const expected = (pendingRelogin.email || '').toLowerCase();
+  if (expected && email && email.toLowerCase() !== expected) {
+    return { success: false, error: 'EMAIL_MISMATCH', email, expected: pendingRelogin.email };
+  }
+
+  const account = await updateAccount(pendingRelogin.accountId, {
+    ...snapshot,
+    email: email || pendingRelogin.email,
+    lastSaved: Date.now(),
+  });
+
+  await chrome.storage.local.set({
+    activeAccountId: pendingRelogin.accountId,
+    pendingRelogin: null,
+    reloginResult: { ok: true, accountId: pendingRelogin.accountId, name: account?.name || '', at: Date.now() },
+  });
+  await setReloginBadge(false);
+
+  return { success: true, account };
+}
+
+async function cancelRelogin() {
+  await chrome.storage.local.set({ pendingRelogin: null });
+  await setReloginBadge(false);
+  return { success: true };
+}
+
+// Supabase redirects away from /sign-in once login succeeds — capture it there.
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== 'complete') return;
+  if (!tab.url?.includes('supabase.com')) return;
+  if (tab.url.includes('/sign-in') || tab.url.includes('/sign-up')) return;
+
+  if (!await getPendingRelogin()) return;
+
+  const res = await finishRelogin(tabId);
+  if (res.success) {
+    console.log('[BaseHopper] Re-login captured for', res.account?.name);
+  } else if (res.error === 'EMAIL_MISMATCH') {
+    // Logged in as somebody else — leave the stored account untouched
+    await chrome.storage.local.set({
+      pendingRelogin: null,
+      reloginResult: { ok: false, error: 'EMAIL_MISMATCH', email: res.email, expected: res.expected, at: Date.now() },
+    });
+    await setReloginBadge(false);
+  }
+  // NOT_LOGGED_IN: still on the way through the login flow, keep waiting
+});
+
 async function switchToAccount(accountId, tabId) {
   const { accounts = [] } = await chrome.storage.local.get('accounts');
   const account = accounts.find(a => a.id === accountId);
@@ -85,6 +264,11 @@ async function switchToAccount(accountId, tabId) {
   await setAuthStorage(tabId, account.lsEntries || {});
 
   await chrome.storage.local.set({ activeAccountId: accountId });
+
+  // Switching elsewhere abandons any re-login that was waiting on this browser state
+  const { pendingRelogin } = await chrome.storage.local.get('pendingRelogin');
+  if (pendingRelogin && pendingRelogin.accountId !== accountId) await cancelRelogin();
+
   return { success: true };
 }
 
@@ -244,14 +428,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           break;
         }
         case 'UPDATE_CURRENT_COOKIES': {
-          const { accounts = [], activeAccountId } = await chrome.storage.local.get(['accounts', 'activeAccountId']);
-          if (!activeAccountId) { sendResponse({ success: false }); break; }
-          const currentCookies = await getSupabaseCookies();
-          const updated = accounts.map(a =>
-            a.id === activeAccountId ? { ...a, cookies: currentCookies, lastSaved: Date.now() } : a
-          );
-          await chrome.storage.local.set({ accounts: updated });
-          sendResponse({ success: true });
+          const { activeAccountId } = await chrome.storage.local.get('activeAccountId');
+          if (!activeAccountId) { sendResponse({ success: false, error: 'No active account' }); break; }
+          const snapshot = await captureSession(message.tabId);
+          const patch = { cookies: snapshot.cookies, lastSaved: Date.now() };
+          // Only overwrite the stored session when we actually read one back
+          if (hasLiveAuth(snapshot.lsEntries)) patch.lsEntries = snapshot.lsEntries;
+          await updateAccount(activeAccountId, patch);
+          sendResponse({ success: true, capturedSession: !!patch.lsEntries });
+          break;
+        }
+
+        case 'RELOGIN_ACCOUNT': {
+          sendResponse(await startRelogin(message.accountId, message.tabId));
+          break;
+        }
+        case 'FINISH_RELOGIN': {
+          const tab = message.tabId
+            ? await chrome.tabs.get(message.tabId).catch(() => null)
+            : await findSupabaseTab();
+          if (!tab) { sendResponse({ success: false, error: 'Open supabase.com first' }); break; }
+          sendResponse(await finishRelogin(tab.id));
+          break;
+        }
+        case 'CANCEL_RELOGIN': {
+          sendResponse(await cancelRelogin());
+          break;
+        }
+        case 'GET_RELOGIN_STATE': {
+          const pendingRelogin = await getPendingRelogin();
+          const { reloginResult = null } = await chrome.storage.local.get('reloginResult');
+          // Results are consumed once, by whichever surface asks first
+          if (reloginResult) await chrome.storage.local.set({ reloginResult: null });
+          sendResponse({ success: true, pendingRelogin, reloginResult });
           break;
         }
         case 'GET_CURRENT_COOKIES': {

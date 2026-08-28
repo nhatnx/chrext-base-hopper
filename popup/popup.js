@@ -23,6 +23,10 @@ const emailInput = $('account-email');
 const toast = $('toast');
 const infoBar = $('info-bar');
 const infoText = $('info-text');
+const reloginBar = $('relogin-bar');
+const reloginText = $('relogin-text');
+const reloginDone = $('relogin-done');
+const reloginCancel = $('relogin-cancel');
 
 // --- Helpers ---
 function showToast(msg, type = 'success') {
@@ -107,6 +111,10 @@ function renderAccounts() {
       item.style.borderColor = ac.color + '88';
     }
     const accountEmail = `${escHtml(account.email || 'No email')} · Saved ${formatDate(account.lastSaved)}`;
+    const session = BaseHopperSession.info(account);
+    const reloginChip = session.live
+      ? ''
+      : `<button class="relogin-chip" data-id="${account.id}" title="${escHtml(session.label)} — log in again without touching your other accounts">Re-login</button>`;
 
     item.innerHTML = `
       <div class="avatar" style="background: linear-gradient(135deg, ${ac.bg}, ${ac.border}); border-color: ${ac.border}; color: ${ac.color};">${account.avatar || account.name.charAt(0).toUpperCase()}</div>
@@ -114,6 +122,7 @@ function renderAccounts() {
         <div class="account-name">${escHtml(account.name)}</div>
         <div class="account-email" title="${accountEmail}">${accountEmail}</div>
       </div>
+      ${reloginChip}
       ${isActive
         ? `<span class="active-badge" style="color: ${ac.color}; background: ${ac.bg}; border-color: ${ac.color}44;">Active</span>`
         : `<div class="account-actions">
@@ -172,7 +181,67 @@ function renderAccounts() {
       }
     });
   });
+
+  accountList.querySelectorAll('.relogin-chip').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await startRelogin(btn.dataset.id);
+    });
+  });
 }
+
+// --- Re-login one stale account, leaving the others alone ---
+async function startRelogin(accountId) {
+  const account = accounts.find(a => a.id === accountId);
+  const res = await send({ type: 'RELOGIN_ACCOUNT', accountId, tabId: currentTabId });
+  if (!res?.success) {
+    showToast('Could not start re-login: ' + (res?.error || 'unknown error'), 'error');
+    return;
+  }
+  // The user now works in the sign-in tab; the bar is waiting when they return
+  showReloginBar({ accountId, name: account?.name, email: account?.email });
+  window.close();
+}
+
+function showReloginBar(pending) {
+  if (!pending) { reloginBar.style.display = 'none'; return; }
+  reloginText.textContent = `Log in as ${pending.email || pending.name} on supabase.com`;
+  reloginBar.style.display = 'flex';
+}
+
+async function checkReloginState() {
+  const res = await send({ type: 'GET_RELOGIN_STATE' });
+  showReloginBar(res?.pendingRelogin);
+
+  const result = res?.reloginResult;
+  if (!result) return;
+  if (result.ok) {
+    showToast(`"${result.name}" re-logged in`);
+  } else if (result.error === 'EMAIL_MISMATCH') {
+    showToast(`Logged in as ${result.email}, expected ${result.expected}`, 'error');
+  }
+}
+
+reloginDone.addEventListener('click', async () => {
+  const res = await send({ type: 'FINISH_RELOGIN', tabId: currentTabId });
+  if (res?.success) {
+    showReloginBar(null);
+    await loadAccounts();
+    showToast(`"${res.account?.name}" re-logged in`);
+  } else if (res?.error === 'NOT_LOGGED_IN') {
+    showToast('No session found — finish logging in first', 'error');
+  } else if (res?.error === 'EMAIL_MISMATCH') {
+    showToast(`Logged in as ${res.email}, expected ${res.expected}`, 'error');
+  } else {
+    showToast(res?.error || 'Could not capture session', 'error');
+  }
+});
+
+reloginCancel.addEventListener('click', async () => {
+  await send({ type: 'CANCEL_RELOGIN' });
+  showReloginBar(null);
+  showToast('Re-login cancelled');
+});
 
 function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -239,7 +308,7 @@ async function handleRefresh() {
     return;
   }
   refreshBtn.style.opacity = '0.4';
-  const res = await send({ type: 'UPDATE_CURRENT_COOKIES' });
+  const res = await send({ type: 'UPDATE_CURRENT_COOKIES', tabId: currentTabId });
   refreshBtn.style.opacity = '';
   if (res.success) {
     await loadAccounts();
@@ -264,5 +333,6 @@ emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSave(
 // --- Init ---
 (async () => {
   await checkCurrentTab();
+  await checkReloginState();
   await loadAccounts();
 })();

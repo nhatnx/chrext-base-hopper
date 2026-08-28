@@ -198,6 +198,60 @@
       flex-shrink: 0;
     }
 
+    .relogin-chip {
+      font-size: 10px;
+      font-weight: 500;
+      color: #f59e0b;
+      background: #f59e0b1a;
+      border: 1px solid #f59e0b44;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+
+    .relogin-chip:hover {
+      background: #f59e0b2e;
+      border-color: #f59e0b88;
+    }
+
+    .relogin-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f59e0b14;
+      border-bottom: 1px solid #f59e0b33;
+      font-size: 11px;
+      color: var(--text);
+    }
+
+    .relogin-bar .msg {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .relogin-bar button {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: #f59e0b;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      flex-shrink: 0;
+    }
+
+    .relogin-bar button.dim {
+      color: var(--text-dim);
+    }
+
     .account-actions {
       display: flex;
       gap: 3px;
@@ -483,6 +537,13 @@
     </div>
   </div>
 
+  <!-- Re-login in progress -->
+  <div class="relogin-bar" id="relogin-bar" style="display:none">
+    <span class="msg" id="relogin-text"></span>
+    <button id="relogin-done">I'm logged in</button>
+    <button class="dim" id="relogin-cancel">Cancel</button>
+  </div>
+
   <!-- Info bar (shown when on supabase.com) -->
   <div class="info-bar" id="info-bar" style="display:none">
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -556,6 +617,7 @@
   <!-- Toast -->
   <div class="toast" id="toast"></div>
 
+  <script src="../lib/session.js"></script>
   <script src="./popup.js"></script>
 </body>
 
