@@ -1,7 +1,8 @@
 // dashboard.js — BaseHopper full-page dashboard
 
 let accounts = [];
-let dataByAccount = {};   // { accountId: { status: 'loading'|'ok'|'no_token'|'bad_token'|'error', projects, pausedSince, error } }
+let dataByAccount = {};   // { accountId: { status: 'loading'|'ok'|'no_token'|'bad_token'|'error', projects, error } }
+let pausedSince = {};     // { 'accountId:projectRef': timestamp } — owned by the service worker
 let currentFilter = 'all';
 let toastTimer = null;
 
@@ -39,6 +40,20 @@ function hexAlpha(hex, a) {
 }
 
 function plural(n, word) { return `${n} ${word}${n === 1 ? '' : 's'}`; }
+
+function refreshIcon(size = 13) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none">
+    <path d="M2 8a6 6 0 0 1 10.5-3.95" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+    <path d="M14 8a6 6 0 0 1-10.5 3.95" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+    <path d="M11 2.5l1.5 1.55-1.5 1.55" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M5 13.5l-1.5-1.55 1.5-1.55" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>`;
+}
+
+function setSpinning(btn, on) {
+  btn.disabled = on;
+  btn.querySelector('svg')?.classList.toggle('spin', on);
+}
 
 // ── Account colors — same palette/hash as the popup, so avatars match ─────────
 const COLOR_PALETTE = ['#3ecf8e', '#60a5fa', '#a78bfa', '#fb923c', '#f472b6', '#22d3ee', '#facc15'];
@@ -106,7 +121,7 @@ const STATUS_LABELS = {
 function projectRef(project) { return project.id || project.ref || ''; }
 
 // Returns { state, label, pending, daysPaused, daysLeft }
-function classify(accountId, project, pausedSince) {
+function classify(accountId, project) {
   const raw = String(project.status || '').toUpperCase();
   const label = STATUS_LABELS[raw] || (raw.includes('PAUS') ? 'Paused' : 'Active');
   const pending = PENDING_STATUSES.includes(raw);
@@ -114,7 +129,7 @@ function classify(accountId, project, pausedSince) {
   const isPaused = raw === 'INACTIVE' || raw.includes('PAUS') || raw === 'GOING_DOWN' || raw === 'RESTORE_FAILED';
   if (!isPaused) return { state: 'active', label, pending };
 
-  const since = pausedSince?.[`${accountId}:${projectRef(project)}`];
+  const since = pausedSince[`${accountId}:${projectRef(project)}`];
   const daysPaused = since ? Math.floor((Date.now() - since) / DAY) : null;
   const daysLeft = daysPaused === null ? null : Math.max(GRACE_DAYS - daysPaused, 0);
 
@@ -143,11 +158,8 @@ async function loadAccounts() {
 async function loadProjects(accountId) {
   const res = await send({ type: 'MGMT_LIST_PROJECTS', accountId });
   if (res?.success) {
-    dataByAccount[accountId] = {
-      status: 'ok',
-      projects: res.projects || [],
-      pausedSince: res.pausedSince || {},
-    };
+    dataByAccount[accountId] = { status: 'ok', projects: res.projects || [] };
+    if (res.pausedSince) pausedSince = res.pausedSince;
   } else if (res?.error === 'NO_TOKEN') {
     dataByAccount[accountId] = { status: 'no_token', projects: [] };
   } else if (res?.error === 'BAD_TOKEN') {
@@ -176,7 +188,7 @@ function allClassified() {
     const data = dataByAccount[account.id];
     if (data?.status !== 'ok') continue;
     for (const project of data.projects) {
-      out.push(classify(account.id, project, data.pausedSince));
+      out.push(classify(account.id, project));
     }
   }
   return out;
@@ -230,6 +242,9 @@ function accountHeader(account, data) {
     <span class="acct-name">${esc(account.name)}</span>
     <span class="acct-email mono">${esc(account.email || '')}</span>
     <span class="acct-status">${statusHtml}</span>
+    <button class="btn icon sm refresh-acct" data-acct="${esc(account.id)}" title="Refresh this account">
+      ${refreshIcon(13)}
+    </button>
   `;
   return hdr;
 }
@@ -258,6 +273,8 @@ function projectCard(accountId, project, info) {
   const ref = projectRef(project);
   const card = document.createElement('div');
   card.className = `card ${info.state}`;
+  card.dataset.acct = accountId;
+  card.dataset.ref = ref;
 
   let meta;
   if (info.state === 'paused') {
@@ -291,7 +308,11 @@ function projectCard(accountId, project, info) {
       <span class="badge ${badgeClass}">${esc(info.label)}</span>
     </div>
     <div class="card-meta">${meta}</div>
-    <div class="card-actions">${actions}</div>
+    <div class="card-actions">
+      ${actions}
+      <button class="btn icon sm refresh-project" data-acct="${esc(accountId)}" data-ref="${esc(ref)}"
+        title="Refresh this project's status">${refreshIcon(12)}</button>
+    </div>
   `;
   return card;
 }
@@ -317,7 +338,7 @@ function render() {
     let visible = [];
     if (data.status === 'ok') {
       visible = data.projects
-        .map(project => ({ project, info: classify(account.id, project, data.pausedSince) }))
+        .map(project => ({ project, info: classify(account.id, project) }))
         .filter(({ info }) => currentFilter === 'all' || info.state === currentFilter);
     }
 
@@ -395,8 +416,51 @@ main.addEventListener('click', async (e) => {
     await resumeProject(accountId, ref, btn);
   } else if (btn.classList.contains('pause-btn')) {
     await pauseProject(accountId, ref, btn);
+  } else if (btn.classList.contains('refresh-project')) {
+    await refreshProject(accountId, ref, btn);
+  } else if (btn.classList.contains('refresh-acct')) {
+    await refreshAccount(accountId, btn);
   }
 });
+
+// Re-poll a single project and swap its card in place, so the rest of the page
+// (scroll position, other accounts' in-flight state) is left alone.
+async function refreshProject(accountId, ref, btn) {
+  const card = btn.closest('.card');
+  setSpinning(btn, true);
+
+  const res = await send({ type: 'MGMT_GET_PROJECT', accountId, projectRef: ref });
+  if (!res?.success) {
+    showToast('Refresh failed: ' + (res?.error || 'unknown error'), 'err');
+    setSpinning(btn, false);
+    return;
+  }
+  if (res.pausedSince) pausedSince = res.pausedSince;
+
+  const data = dataByAccount[accountId];
+  if (data?.status !== 'ok') { await loadProjects(accountId); render(); return; }
+
+  const index = data.projects.findIndex(p => projectRef(p) === ref);
+  if (index === -1) data.projects.push(res.project);
+  else data.projects[index] = res.project;
+
+  const info = classify(accountId, res.project);
+  showToast(`${res.project.name} · ${info.label}`);
+
+  // Status may have moved the project out of the active filter — redraw instead
+  if (currentFilter !== 'all' && info.state !== currentFilter) { render(); return; }
+
+  card?.replaceWith(projectCard(accountId, res.project, info));
+  renderSummary();
+}
+
+async function refreshAccount(accountId, btn) {
+  setSpinning(btn, true);
+  await loadProjects(accountId);
+  render();
+  const status = dataByAccount[accountId]?.status;
+  showToast(status === 'ok' ? 'Account refreshed' : 'Could not load projects', status === 'ok' ? 'ok' : 'err');
+}
 
 async function saveToken(accountId, btn) {
   const input = main.querySelector(`.token-input[data-acct="${accountId}"]`);

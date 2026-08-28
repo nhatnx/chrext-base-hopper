@@ -156,7 +156,9 @@ function isPausedStatus(status) {
 
 // The Management API does not expose when a project was paused, so we remember
 // the first time we saw it paused and use that to estimate the 90-day deadline.
-async function trackPausedProjects(accountId, projects) {
+// `prune` drops bookkeeping for projects missing from `projects` — only safe
+// when `projects` is the account's full list, not a single refreshed project.
+async function trackPausedProjects(accountId, projects, { prune = true } = {}) {
   const { pausedSince = {} } = await chrome.storage.local.get('pausedSince');
   const prefix = `${accountId}:`;
   const now = Date.now();
@@ -177,12 +179,23 @@ async function trackPausedProjects(accountId, projects) {
   }
 
   // Forget projects that no longer exist in this account
-  for (const key of Object.keys(pausedSince)) {
-    if (key.startsWith(prefix) && !seen.has(key)) { delete pausedSince[key]; changed = true; }
+  if (prune) {
+    for (const key of Object.keys(pausedSince)) {
+      if (key.startsWith(prefix) && !seen.has(key)) { delete pausedSince[key]; changed = true; }
+    }
   }
 
   if (changed) await chrome.storage.local.set({ pausedSince });
   return pausedSince;
+}
+
+function enrichProject(project, orgs) {
+  const org = orgs[project.organization_id];
+  return {
+    ...project,
+    organization_name: org?.name || '',
+    plan: project.plan || org?.plan || '',
+  };
 }
 
 // Org name / plan are not part of /projects — fetch them separately, best effort.
@@ -287,16 +300,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
           const projects = Array.isArray(res.body) ? res.body : [];
           const orgs = await listOrganizations(account.accessToken);
-          const enriched = projects.map(p => ({
-            ...p,
-            organization_name: orgs[p.organization_id]?.name || '',
-            plan: p.plan || orgs[p.organization_id]?.plan || '',
-          }));
           const pausedSince = await trackPausedProjects(message.accountId, projects);
 
           sendResponse({
             success: true,
-            projects: enriched,
+            projects: projects.map(p => enrichProject(p, orgs)),
+            pausedSince,
+            graceDays: PAUSE_GRACE_DAYS,
+          });
+          break;
+        }
+
+        case 'MGMT_GET_PROJECT': {
+          const account = await getAccount(message.accountId);
+          if (!account) { sendResponse({ success: false, error: 'Account not found' }); break; }
+          if (!account.accessToken) { sendResponse({ success: false, error: 'NO_TOKEN' }); break; }
+
+          // /projects/{ref} is not served by every API version — fall back to the list
+          let res = await mgmtFetch(account.accessToken, `/projects/${message.projectRef}`);
+          if (res.status === 401 || res.status === 403) { sendResponse({ success: false, error: 'BAD_TOKEN' }); break; }
+
+          let project = res.ok && res.body && typeof res.body === 'object' ? res.body : null;
+          if (!project) {
+            res = await mgmtFetch(account.accessToken, '/projects');
+            if (res.status === 401 || res.status === 403) { sendResponse({ success: false, error: 'BAD_TOKEN' }); break; }
+            if (!res.ok) { sendResponse({ success: false, error: mgmtError(res) }); break; }
+            const list = Array.isArray(res.body) ? res.body : [];
+            project = list.find(p => (p.id || p.ref) === message.projectRef) || null;
+          }
+          if (!project) { sendResponse({ success: false, error: 'Project not found' }); break; }
+
+          const orgs = await listOrganizations(account.accessToken);
+          const pausedSince = await trackPausedProjects(message.accountId, [project], { prune: false });
+
+          sendResponse({
+            success: true,
+            project: enrichProject(project, orgs),
             pausedSince,
             graceDays: PAUSE_GRACE_DAYS,
           });
